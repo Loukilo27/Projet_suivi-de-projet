@@ -1,0 +1,10 @@
+# Fichiers à ne PAS copier dans l'image de production
+.git
+.env.local
+.env.*.local
+var/
+vendor/
+public/assets/
+node_modules/
+compose*.yaml
+Dockerfile

@@ -1,18 +1,25 @@
-
+# =====================================================================
+#  Ajouts pour le DÉVELOPPEMENT (chargé automatiquement en local)
+# =====================================================================
 services:
-###> doctrine/doctrine-bundle ###
-  database:
-    ports:
-      - "5432"
-###< doctrine/doctrine-bundle ###
 
-###> symfony/mailer ###
-  mailer:
-    image: axllent/mailpit
-    ports:
-      - "1025"
-      - "8025"
+  app:
+    build:
+      target: dev
     environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
-###< symfony/mailer ###
+      APP_ENV: dev
+      SERVER_NAME: ":80"          # HTTP simple, sans certificat, en local
+    ports:
+      - "8000:80"                 # -> http://localhost:8000
+    volumes:
+      - ./:/app                   # ton dossier de travail est branché dans le conteneur
+
+  # Interface web pour voir/modifier la base : http://localhost:8080
+  phpmyadmin:
+    image: phpmyadmin:5
+    environment:
+      PMA_HOST: database
+    ports:
+      - "8080:80"
+    depends_on:
+      - database

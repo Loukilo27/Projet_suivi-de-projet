@@ -1,0 +1,18 @@
+# =====================================================================
+#  Ajouts pour la PRODUCTION (serveur)
+#  Lancement :
+#    docker compose --env-file .env.prod.local -f compose.yaml -f compose.prod.yaml up -d --build
+# =====================================================================
+services:
+
+  app:
+    build:
+      target: prod
+    environment:
+      APP_ENV: prod
+      APP_SECRET: ${APP_SECRET}
+      SERVER_NAME: ${SERVER_NAME}   # ton nom de domaine -> HTTPS automatique
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
