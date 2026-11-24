@@ -5,7 +5,6 @@ namespace App\DataFixtures;
 use App\Entity\Projet;
 use App\Entity\Tache;
 use App\Entity\User;
-use App\Enum\EtatProjet;
 use App\Enum\EtatTache;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -17,6 +16,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  * ⚠️ Cette commande VIDE la base avant de la remplir.
  *
  * Tous les comptes ont le mot de passe : password
+ * Les dates sont relatives au jour du chargement.
  */
 class AppFixtures extends Fixture
 {
@@ -30,72 +30,63 @@ class AppFixtures extends Fixture
     public function load(ObjectManager $manager): void
     {
         // ------------------------------------------------------------
-        // 1. Utilisateurs
+        // 1. Comptes : 1 administrateur + des chefs de projet
+        //    (les visiteurs n'ont pas de compte : le site est public)
         // ------------------------------------------------------------
-        $this->creerUser($manager, 'Admin', 'admin@test.fr', ['ROLE_ADMIN']);
+        $this->creerUser($manager, 'Administrateur', 'admin@test.fr', ['ROLE_ADMIN'], '-1 day');
 
-        $alice = $this->creerUser($manager, 'Alice Martin', 'alice@test.fr', ['ROLE_CHEF_PROJET']);
-        $bruno = $this->creerUser($manager, 'Bruno Petit', 'bruno@test.fr', ['ROLE_CHEF_PROJET']);
+        $alice = $this->creerUser($manager, 'Alice Martin', 'alice@test.fr', ['ROLE_CHEF_PROJET'], '-2 hours');
+        $bruno = $this->creerUser($manager, 'Bruno Petit', 'bruno@test.fr', ['ROLE_CHEF_PROJET'], '-3 days');
 
-        // Utilisateurs simples : pas de rôle à préciser, ROLE_USER est ajouté automatiquement
-        $chloe = $this->creerUser($manager, 'Chloé Durand', 'chloe@test.fr');
-        $david = $this->creerUser($manager, 'David Leroy', 'david@test.fr');
-        $emma = $this->creerUser($manager, 'Emma Moreau', 'emma@test.fr');
+        // 10 chefs de projet en plus, sans projet, pour tester la pagination (7.11)
+        for ($i = 1; $i <= 10; ++$i) {
+            $this->creerUser(
+                $manager,
+                sprintf('Chef Test %02d', $i),
+                sprintf('chef%02d@test.fr', $i),
+                ['ROLE_CHEF_PROJET'],
+                1 === $i % 3 ? null : sprintf('-%d days', $i * 4),   // certains ne se sont jamais connectés
+            );
+        }
 
         // ------------------------------------------------------------
-        // 2. Projets (les dates sont relatives à aujourd'hui)
+        // 2. Projets
         // ------------------------------------------------------------
-        $site = $this->creerProjet(
-            $manager,
-            'Refonte du site web',
-            'Nouvelle version du site vitrine : design, contenus et référencement.',
-            EtatProjet::EnCours,
-            '-1 month',
-            '+2 months',
-            $alice,
-            [$chloe, $david],
-        );
+        // En cours, aujourd'hui dans la période -> visible sur la page d'accueil publique
+        $site = $this->creerProjet($manager, 'Refonte du site web', '-1 month', '+2 months', $alice);
 
-        $mobile = $this->creerProjet(
-            $manager,
-            'Application mobile',
-            'Application mobile de prise de rendez-vous pour les clients.',
-            EtatProjet::EnRetard,
-            '-4 months',
-            '-1 week',
-            $bruno,
-            [$david, $emma],
-        );
+        // En cours, aujourd'hui dans la période, avec une tâche en retard -> marqué en retard
+        $mobile = $this->creerProjet($manager, 'Application mobile', '-3 months', '+1 month', $bruno);
 
-        $serveurs = $this->creerProjet(
-            $manager,
-            'Migration des serveurs',
-            'Passage des serveurs internes vers un hébergement cloud.',
-            EtatProjet::Fini,
-            '-6 months',
-            '-2 months',
-            $alice,
-            [$emma],
-        );
+        // Terminé (toutes les tâches faites), période passée -> grisé, pas sur la page publique
+        $serveurs = $this->creerProjet($manager, 'Migration des serveurs', '-6 months', '-2 months', $alice);
+
+        // Période passée mais pas fini -> en retard, pas sur la page publique
+        $intranet = $this->creerProjet($manager, 'Nouvel intranet', '-5 months', '-1 week', $bruno);
+
+        // Pas encore commencé (période future) -> pas sur la page publique
+        $formation = $this->creerProjet($manager, 'Formation des équipes', '+1 month', '+3 months', $alice);
 
         // ------------------------------------------------------------
         // 3. Tâches
         // ------------------------------------------------------------
-        // Projet "Refonte du site web"
-        $this->creerTache($manager, $site, 'Réaliser les maquettes des pages principales', EtatTache::Fini, '-1 month', '-2 weeks', $chloe);
-        $this->creerTache($manager, $site, 'Intégrer la page d\'accueil', EtatTache::EnCours, '-2 weeks', '+1 week', $david);
-        $this->creerTache($manager, $site, 'Rédiger les contenus des pages services', EtatTache::PasCommence, '+1 week', '+1 month', $chloe);
-        $this->creerTache($manager, $site, 'Optimiser le référencement (SEO)', EtatTache::PasCommence, '+1 month', '+2 months', null);
+        $this->creerTache($manager, $site, 'Réaliser les maquettes des pages principales', EtatTache::Fini, '-1 month', '-2 weeks');
+        $this->creerTache($manager, $site, 'Intégrer la page d\'accueil', EtatTache::EnCours, '-2 weeks', '+1 week');
+        $this->creerTache($manager, $site, 'Rédiger les contenus des pages services', EtatTache::PasCommence, '+1 week', '+1 month');
+        $this->creerTache($manager, $site, 'Optimiser le référencement (SEO)', EtatTache::PasCommence, '+1 month', '+2 months');
 
-        // Projet "Application mobile"
-        $this->creerTache($manager, $mobile, 'Définir les écrans de l\'application', EtatTache::Fini, '-4 months', '-3 months', $emma);
-        $this->creerTache($manager, $mobile, 'Développer le module de rendez-vous', EtatTache::EnCours, '-3 months', '-2 weeks', $david);
-        $this->creerTache($manager, $mobile, 'Publier sur les stores', EtatTache::PasCommence, '-2 weeks', '-1 week', $bruno);
+        $this->creerTache($manager, $mobile, 'Définir les écrans de l\'application', EtatTache::Fini, '-3 months', '-2 months');
+        $this->creerTache($manager, $mobile, 'Développer le module de rendez-vous', EtatTache::EnCours, '-2 months', '-1 week'); // en retard
+        $this->creerTache($manager, $mobile, 'Publier sur les stores', EtatTache::PasCommence, '+1 week', '+1 month');
 
-        // Projet "Migration des serveurs"
-        $this->creerTache($manager, $serveurs, 'Inventaire des serveurs existants', EtatTache::Fini, '-6 months', '-5 months', $emma);
-        $this->creerTache($manager, $serveurs, 'Migration des bases de données', EtatTache::Fini, '-5 months', '-3 months', $emma);
-        $this->creerTache($manager, $serveurs, 'Tests et mise en service', EtatTache::Fini, '-3 months', '-2 months', $alice);
+        $this->creerTache($manager, $serveurs, 'Inventaire des serveurs existants', EtatTache::Fini, '-6 months', '-5 months');
+        $this->creerTache($manager, $serveurs, 'Migration des bases de données', EtatTache::Fini, '-5 months', '-3 months');
+        $this->creerTache($manager, $serveurs, 'Tests et mise en service', EtatTache::Fini, '-3 months', '-2 months');
+
+        $this->creerTache($manager, $intranet, 'Recueillir les besoins', EtatTache::Fini, '-5 months', '-4 months');
+        $this->creerTache($manager, $intranet, 'Développer l\'annuaire', EtatTache::EnCours, '-4 months', '-1 week');
+
+        $this->creerTache($manager, $formation, 'Préparer les supports', EtatTache::PasCommence, '+1 month', '+2 months');
 
         // Envoie tout à la base en une seule fois
         $manager->flush();
@@ -104,44 +95,33 @@ class AppFixtures extends Fixture
     /**
      * @param string[] $roles
      */
-    private function creerUser(ObjectManager $manager, string $nom, string $email, array $roles = []): User
-    {
+    private function creerUser(
+        ObjectManager $manager,
+        string $nom,
+        string $email,
+        array $roles,
+        ?string $derniereConnexion,
+    ): User {
         $user = new User();
         $user->setNom($nom);
         $user->setEmail($email);
         $user->setRoles($roles);
         // Le mot de passe est chiffré (haché) avant d'être enregistré
         $user->setPassword($this->hasher->hashPassword($user, self::MOT_DE_PASSE));
+        $user->setDerniereConnexion(null === $derniereConnexion ? null : new \DateTimeImmutable($derniereConnexion));
 
         $manager->persist($user);
 
         return $user;
     }
 
-    /**
-     * @param User[] $membres
-     */
-    private function creerProjet(
-        ObjectManager $manager,
-        string $nom,
-        string $descriptif,
-        EtatProjet $etat,
-        string $debut,
-        string $fin,
-        User $chef,
-        array $membres,
-    ): Projet {
+    private function creerProjet(ObjectManager $manager, string $nom, string $debut, string $fin, User $chef): Projet
+    {
         $projet = new Projet();
         $projet->setNom($nom);
-        $projet->setDescriptif($descriptif);
-        $projet->setEtat($etat);
         $projet->setDateDebut(new \DateTimeImmutable($debut));
         $projet->setDateFin(new \DateTimeImmutable($fin));
         $projet->setChefDeProjet($chef);
-
-        foreach ($membres as $membre) {
-            $projet->addMembre($membre);
-        }
 
         $manager->persist($projet);
 
@@ -155,14 +135,12 @@ class AppFixtures extends Fixture
         EtatTache $etat,
         string $debut,
         string $fin,
-        ?User $assigneA,
     ): void {
         $tache = new Tache();
         $tache->setDescription($description);
         $tache->setEtat($etat);
         $tache->setDateDebut(new \DateTimeImmutable($debut));
         $tache->setDateFin(new \DateTimeImmutable($fin));
-        $tache->setAssigneA($assigneA);
 
         $projet->addTache($tache);   // relie la tâche au projet
 
