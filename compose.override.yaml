@@ -13,6 +13,12 @@ services:
       - "8000:80"                 # -> http://localhost:8000
     volumes:
       - ./:/app                   # ton dossier de travail est branché dans le conteneur
+      # Sous Windows, lire/écrire des milliers de petits fichiers à travers le partage est très lent.
+      # On garde donc vendor/ (dépendances) et var/ (cache, logs) DANS Docker :
+      - app_vendor:/app/vendor
+      - app_var:/app/var
+      # Réglages PHP pour le développement (temps max, caches)
+      - ./docker/php/dev.ini:/usr/local/etc/php/conf.d/zz-dev.ini:ro
 
   # Interface web pour voir/modifier la base : http://localhost:8080
   phpmyadmin:
@@ -23,3 +29,7 @@ services:
       - "8080:80"
     depends_on:
       - database
+
+volumes:
+  app_vendor:
+  app_var:
