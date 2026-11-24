@@ -1,0 +1,11 @@
+{#
+    Visuel de l'état d'un projet (calculé : en cours / en retard / terminé).
+    Utilisation : {% include '_partials/_etat_projet.html.twig' with {projet: projet} %}
+#}
+{% if projet.etat.value == 'en_retard' %}
+    <span class="badge text-bg-danger"><i class="bi bi-exclamation-triangle"></i> {{ projet.etat.label }}</span>
+{% elseif projet.etat.value == 'fini' %}
+    <span class="badge text-bg-secondary"><i class="bi bi-check-all"></i> {{ projet.etat.label }}</span>
+{% else %}
+    <span class="badge text-bg-primary"><i class="bi bi-hourglass-split"></i> {{ projet.etat.label }}</span>
+{% endif %}
