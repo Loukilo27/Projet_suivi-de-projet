@@ -3,8 +3,9 @@
 namespace App\Enum;
 
 /**
- * Les états possibles d'un projet.
- * La valeur (à droite) est ce qui est enregistré dans la base.
+ * Les états d'un projet.
+ * Ils ne sont PAS enregistrés en base : ils sont calculés à partir des tâches
+ * et des dates (voir Projet::getEtat()), comme le demande le cahier des charges.
  */
 enum EtatProjet: string
 {
@@ -12,13 +13,13 @@ enum EtatProjet: string
     case EnRetard = 'en_retard';
     case Fini = 'fini';
 
-    /** Texte lisible, pratique pour l'affichage dans Twig : {{ projet.etat.label }} */
+    /** Texte lisible, pratique dans Twig : {{ projet.etat.label }} */
     public function label(): string
     {
         return match ($this) {
             self::EnCours => 'En cours',
             self::EnRetard => 'En retard',
-            self::Fini => 'Fini',
+            self::Fini => 'Terminé',
         };
     }
 }

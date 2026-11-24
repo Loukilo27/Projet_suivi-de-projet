@@ -34,6 +34,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255)]
     private ?string $nom = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $derniereConnexion = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -117,6 +120,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setNom(string $nom): static
     {
         $this->nom = $nom;
+
+        return $this;
+    }
+
+    public function getDerniereConnexion(): ?\DateTimeImmutable
+    {
+        return $this->derniereConnexion;
+    }
+
+    public function setDerniereConnexion(?\DateTimeImmutable $derniereConnexion): static
+    {
+        $this->derniereConnexion = $derniereConnexion;
 
         return $this;
     }

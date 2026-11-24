@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * Table "tache".
+ * Cahier des charges : une description, une date de début, une date de fin, un état.
  */
 #[ORM\Entity(repositoryClass: TacheRepository::class)]
 class Tache
@@ -21,7 +22,7 @@ class Tache
     #[ORM\Column(type: Types::TEXT)]
     private ?string $description = null;
 
-    // Stocké en texte dans la base ('pas_commence', 'en_cours', 'fini')
+    // Par défaut : "pas commencé" (cahier des charges 7.7)
     #[ORM\Column(length: 20, enumType: EtatTache::class)]
     private EtatTache $etat = EtatTache::PasCommence;
 
@@ -33,19 +34,22 @@ class Tache
 
     /**
      * Relation : plusieurs tâches -> un projet (obligatoire).
-     * Crée la colonne "projet_id". Si le projet est supprimé, ses tâches aussi.
+     * Si le projet est supprimé, ses tâches aussi (cahier des charges 7.5).
      */
     #[ORM\ManyToOne(inversedBy: 'taches')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Projet $projet = null;
 
     /**
-     * Relation : plusieurs tâches -> un utilisateur assigné (facultatif).
-     * Crée la colonne "assigne_a_id". Si l'utilisateur est supprimé, la tâche reste mais n'est plus assignée.
+     * En retard = date de fin dépassée et tâche pas encore faite.
+     * Calculé, pas enregistré en base.
      */
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
-    private ?User $assigneA = null;
+    public function estEnRetard(): bool
+    {
+        return EtatTache::Fini !== $this->etat
+            && null !== $this->dateFin
+            && $this->dateFin < new \DateTimeImmutable('today');
+    }
 
     public function getId(): ?int
     {
@@ -108,18 +112,6 @@ class Tache
     public function setProjet(?Projet $projet): static
     {
         $this->projet = $projet;
-
-        return $this;
-    }
-
-    public function getAssigneA(): ?User
-    {
-        return $this->assigneA;
-    }
-
-    public function setAssigneA(?User $assigneA): static
-    {
-        $this->assigneA = $assigneA;
 
         return $this;
     }
