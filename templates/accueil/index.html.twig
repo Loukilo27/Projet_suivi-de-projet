@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Projets en cours — Suivi de projet{% endblock %}
+
+{% block body %}
+    <h1 class="h3 mb-4">Projets en cours</h1>
+
+    {% if projets is empty %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Aucun projet en cours aujourd'hui.
+        </div>
+    {% else %}
+        <div class="card shadow-sm">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Désignation</th>
+                        <th>Chef de projet</th>
+                        <th>Période</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for projet in projets %}
+                        <tr>
+                            <td>
+                                {# Cliquer sur un projet affiche ses tâches (7.2) #}
+                                <a href="{{ path('app_projet_show', {id: projet.id}) }}" class="fw-semibold text-decoration-none">
+                                    {{ projet.nom }}
+                                </a>
+                            </td>
+                            <td>{{ projet.chefDeProjet.nom }}</td>
+                            <td>du {{ projet.dateDebut|date('d/m/Y') }} au {{ projet.dateFin|date('d/m/Y') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}
