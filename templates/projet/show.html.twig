@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ projet.nom }} — Suivi de projet{% endblock %}
+
+{% block body %}
+    <a href="{{ path('app_accueil') }}" class="text-decoration-none">
+        <i class="bi bi-arrow-left"></i> Retour aux projets
+    </a>
+
+    <div class="d-flex align-items-center gap-3 mt-3 mb-1">
+        <h1 class="h3 mb-0">{{ projet.nom }}</h1>
+        {% include '_partials/_etat_projet.html.twig' with {projet: projet} %}
+    </div>
+    <p class="text-muted">
+        Chef de projet : {{ projet.chefDeProjet.nom }}
+        · du {{ projet.dateDebut|date('d/m/Y') }} au {{ projet.dateFin|date('d/m/Y') }}
+    </p>
+
+    {# Liste provisoire : remplacée par le calendrier à l'étape 5 #}
+    {% if projet.taches is empty %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Ce projet n'a pas encore de tâche.
+        </div>
+    {% else %}
+        <div class="card shadow-sm">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tâche</th>
+                        <th>Début</th>
+                        <th>Fin</th>
+                        <th>État</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tache in projet.taches %}
+                        <tr>
+                            <td>{{ tache.description }}</td>
+                            <td>{{ tache.dateDebut|date('d/m/Y') }}</td>
+                            <td>{{ tache.dateFin|date('d/m/Y') }}</td>
+                            <td>{% include '_partials/_etat_tache.html.twig' with {tache: tache} %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}
